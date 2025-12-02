@@ -60,21 +60,43 @@ router.get("/getuser/:id", async (req, res) => {
   }
 });
 
-// GET /api/users/allmembers - Get all users with transactions
+// GET /api/users/allmembers - Get all users with pagination
 router.get("/allmembers", async (req, res) => {
   try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search = '',
+      isAdmin = ''
+    } = req.query;
+
+    const where = {};
+    if (search) {
+      where.OR = [
+        { userFullName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { memberId: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+    if (isAdmin !== '') {
+      where.isAdmin = isAdmin === 'true';
+    }
+
+    const totalUsers = await prisma.user.count({ where });
+
     const users = await prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
+      where,
+      orderBy: { [sortBy]: sortOrder },
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit),
       select: {
         id: true,
         userFullName: true,
         memberId: true,
-        age: true,
-        dob: true,
-        gender: true,
-        address: true,
-        mobileNumber: true,
         email: true,
+        mobileNumber: true,
         points: true,
         activeTransactions: true,
         prevTransactions: true,
@@ -83,30 +105,15 @@ router.get("/allmembers", async (req, res) => {
       },
     });
 
-    // Populate transactions for each user
-    const usersWithTransactions = await Promise.all(
-      users.map(async (user) => {
-        const activeTransactionDetails = await Promise.all(
-          user.activeTransactions.map(async (txId) => {
-            return await prisma.bookTransaction.findUnique({ where: { id: txId } });
-          })
-        );
-
-        const prevTransactionDetails = await Promise.all(
-          user.prevTransactions.map(async (txId) => {
-            return await prisma.bookTransaction.findUnique({ where: { id: txId } });
-          })
-        );
-
-        return {
-          ...user,
-          activeTransactions: activeTransactionDetails.filter(Boolean),
-          prevTransactions: prevTransactionDetails.filter(Boolean),
-        };
-      })
-    );
-
-    res.json(usersWithTransactions);
+    res.json({
+      users,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalUsers / parseInt(limit)),
+        totalUsers,
+        limit: parseInt(limit)
+      }
+    });
   } catch (err) {
     console.error("Get all members error:", err);
     res.status(500).json({ message: "Server error" });

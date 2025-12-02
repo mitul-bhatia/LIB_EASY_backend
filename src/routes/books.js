@@ -3,29 +3,59 @@ const prisma = require("../config/prismaclient.js");
 
 const router = express.Router();
 
-// GET /api/books/allbooks - Get all books with transactions
+// GET /api/books/allbooks - Get all books with pagination, sorting, filtering
 router.get("/allbooks", async (req, res) => {
   try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search = '',
+      category = '',
+      available = ''
+    } = req.query;
+
+    const where = {};
+    
+    if (search) {
+      where.OR = [
+        { bookName: { contains: search, mode: 'insensitive' } },
+        { author: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    if (category) {
+      where.categories = { has: category };
+    }
+
+    if (available === 'true') {
+      where.bookCountAvailable = { gt: 0 };
+    } else if (available === 'false') {
+      where.bookCountAvailable = { equals: 0 };
+    }
+
+    const totalBooks = await prisma.book.count({ where });
+
     const books = await prisma.book.findMany({
-      orderBy: { createdAt: "desc" },
+      where,
+      orderBy: { [sortBy]: sortOrder },
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit),
     });
 
-    // Populate transactions for each book
-    const booksWithTransactions = await Promise.all(
-      books.map(async (book) => {
-        const transactions = await Promise.all(
-          book.transactions.map(async (txId) => {
-            return await prisma.bookTransaction.findUnique({ where: { id: txId } });
-          })
-        );
-        return { ...book, transactions: transactions.filter(Boolean) };
-      })
-    );
-
-    res.status(200).json(booksWithTransactions);
+    res.status(200).json({
+      books,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalBooks / parseInt(limit)),
+        totalBooks,
+        limit: parseInt(limit)
+      }
+    });
   } catch (err) {
     console.error("Get all books error:", err);
-    res.status(504).json({ message: "Error fetching books" });
+    res.status(500).json({ message: "Error fetching books" });
   }
 });
 

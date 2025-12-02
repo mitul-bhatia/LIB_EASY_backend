@@ -107,16 +107,43 @@ router.post("/add-transaction", async (req, res) => {
   }
 });
 
-// GET /api/transactions/all-transactions - Get all transactions
+// GET /api/transactions/all-transactions - Get all transactions with pagination
 router.get("/all-transactions", async (req, res) => {
   try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      status = '',
+      type = ''
+    } = req.query;
+
+    const where = {};
+    if (status) where.transactionStatus = status;
+    if (type) where.transactionType = type;
+
+    const totalTransactions = await prisma.bookTransaction.count({ where });
+
     const transactions = await prisma.bookTransaction.findMany({
-      orderBy: { createdAt: "desc" },
+      where,
+      orderBy: { [sortBy]: sortOrder },
+      skip: (parseInt(page) - 1) * parseInt(limit),
+      take: parseInt(limit),
     });
-    res.status(200).json(transactions);
+
+    res.status(200).json({
+      transactions,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalTransactions / parseInt(limit)),
+        totalTransactions,
+        limit: parseInt(limit)
+      }
+    });
   } catch (err) {
     console.error("Get all transactions error:", err);
-    res.status(504).json({ message: "Error fetching transactions" });
+    res.status(500).json({ message: "Error fetching transactions" });
   }
 });
 
