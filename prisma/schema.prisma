@@ -7,30 +7,74 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
+enum UserType {
+  Student
+  Staff
 }
 
 model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String   @unique
-  password  String
-  name      String?
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  books     Book[]   @relation("UserBooks")
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  userType            UserType
+  userFullName        String   @unique
+  admissionId         String?  @unique
+  employeeId          String?  @unique
+  age                 Int?
+  gender              String?
+  dob                 String?
+  address             String   @default("")
+  mobileNumber        String
+  photo               String   @default("")
+  email               String   @unique
+  password            String
+  points              Int      @default(0)
+  activeTransactions  String[] @default([])
+  prevTransactions    String[] @default([])
+  isAdmin             Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  addedBooks          Book[]   @relation("UserBooks")
 }
 
 model Book {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  title         String
-  author        String?
-  isbn          String?  @unique
-  publishedYear Int?
-  categories    String[]
-  coverURL      String?
-  createdAt     DateTime @default(now())
-  addedById     String?  @db.ObjectId
-  addedBy       User?    @relation("UserBooks", fields: [addedById], references: [id])
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookName          String
+  alternateTitle    String   @default("")
+  author            String
+  language          String   @default("")
+  publisher         String   @default("")
+  bookCountAvailable Int
+  bookStatus        String   @default("Available")
+  isbn              String?  @unique
+  categories        String[] @default([])
+  transactions      String[] @default([])
+  coverURL          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  addedById         String?  @db.ObjectId
+  addedBy           User?    @relation("UserBooks", fields: [addedById], references: [id])
+}
+
+model BookTransaction {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookId             String
+  borrowerId         String
+  bookName           String
+  borrowerName       String
+  transactionType    String
+  fromDate           String
+  toDate             String
+  returnDate         String?
+  transactionStatus  String   @default("Active")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model BookCategory {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  categoryName String   @unique
+  books        String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

@@ -3,7 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
-const {router }  = require('./routes/auth.js');
+const { router: authRouter } = require('./routes/auth.js');
+const { router: usersRouter } = require('./routes/users.js');
 
 const app = express();
 
@@ -15,7 +16,8 @@ app.use(cors({
     credentials: true,  
 }))
 
-app.use("/api/auth",router)
+app.use("/api/auth", authRouter);
+app.use("/api/users", usersRouter);
 
 
 
