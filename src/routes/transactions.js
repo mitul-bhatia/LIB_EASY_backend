@@ -176,6 +176,28 @@ router.delete("/remove-transaction/:id", async (req, res) => {
       });
     }
 
+    // Remove from user's activeTransactions or prevTransactions
+    let user = await prisma.user.findFirst({
+      where: { memberId: transaction.borrowerId },
+    });
+    if (!user) {
+      user = await prisma.user.findFirst({
+        where: { email: transaction.borrowerId },
+      });
+    }
+
+    if (user) {
+      const updatedActive = user.activeTransactions.filter((txId) => txId !== id);
+      const updatedPrev = user.prevTransactions.filter((txId) => txId !== id);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          activeTransactions: updatedActive,
+          prevTransactions: updatedPrev,
+        },
+      });
+    }
+
     // Delete transaction
     await prisma.bookTransaction.delete({ where: { id } });
 
@@ -233,6 +255,14 @@ router.post("/request-book", async (req, res) => {
         transactionStatus: "Pending",
         fromDate,
         toDate,
+      },
+    });
+
+    // Add transaction to user's activeTransactions
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        activeTransactions: [...user.activeTransactions, transaction.id],
       },
     });
 
@@ -301,24 +331,8 @@ router.post("/approve/:id", async (req, res) => {
       },
     });
 
-    // Add to user's active transactions
-    let user = await prisma.user.findFirst({
-      where: { memberId: transaction.borrowerId },
-    });
-    if (!user) {
-      user = await prisma.user.findFirst({
-        where: { email: transaction.borrowerId },
-      });
-    }
-
-    if (user) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          activeTransactions: [...user.activeTransactions, transaction.id],
-        },
-      });
-    }
+    // Note: Transaction is already in user's activeTransactions from request-book
+    // No need to add it again
 
     res.status(200).json({
       message: "Request approved! Book has been issued to the student.",
@@ -351,6 +365,26 @@ router.post("/reject/:id", async (req, res) => {
 
     if (transaction.transactionStatus !== "Pending") {
       return res.status(400).json({ message: "Only pending requests can be rejected" });
+    }
+
+    // Remove from user's activeTransactions
+    let user = await prisma.user.findFirst({
+      where: { memberId: transaction.borrowerId },
+    });
+    if (!user) {
+      user = await prisma.user.findFirst({
+        where: { email: transaction.borrowerId },
+      });
+    }
+
+    if (user) {
+      const updatedActive = user.activeTransactions.filter((txId) => txId !== id);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          activeTransactions: updatedActive,
+        },
+      });
     }
 
     // Delete the transaction
@@ -403,6 +437,15 @@ router.post("/cancel/:id", async (req, res) => {
         message: "Only pending requests can be cancelled. Contact admin for approved requests." 
       });
     }
+
+    // Remove from user's activeTransactions
+    const updatedActive = user.activeTransactions.filter((txId) => txId !== id);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        activeTransactions: updatedActive,
+      },
+    });
 
     // Delete the transaction
     await prisma.bookTransaction.delete({
