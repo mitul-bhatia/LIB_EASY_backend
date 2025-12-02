@@ -85,18 +85,13 @@ router.post("/add-transaction", async (req, res) => {
     });
 
     // Get user and add to active transactions
-    const user = await prisma.user.findFirst({ where: { admissionId: borrowerId } });
+    // Try to find by memberId first, then by email
+    let user = await prisma.user.findFirst({ where: { memberId: borrowerId } });
     if (!user) {
-      const staffUser = await prisma.user.findFirst({ where: { employeeId: borrowerId } });
-      if (staffUser) {
-        await prisma.user.update({
-          where: { id: staffUser.id },
-          data: {
-            activeTransactions: [...staffUser.activeTransactions, transaction.id],
-          },
-        });
-      }
-    } else {
+      user = await prisma.user.findFirst({ where: { email: borrowerId } });
+    }
+    
+    if (user) {
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -191,6 +186,288 @@ router.delete("/remove-transaction/:id", async (req, res) => {
   }
 });
 
+// POST /api/transactions/request-book - Student requests a book
+router.post("/request-book", async (req, res) => {
+  try {
+    const { bookId, userId } = req.body;
+
+    if (!bookId || !userId) {
+      return res.status(400).json({ message: "Book ID and User ID are required" });
+    }
+
+    // Get user details
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Get book details
+    const book = await prisma.book.findUnique({ where: { id: bookId } });
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    // Check if user already has this book (active transaction)
+    const existingTransaction = await prisma.bookTransaction.findFirst({
+      where: {
+        bookId: bookId,
+        borrowerId: user.memberId || user.email,
+        transactionStatus: { in: ["Pending", "Reserved", "Active"] },
+      },
+    });
+
+    if (existingTransaction) {
+      return res.status(400).json({ 
+        message: "You already have a request or active transaction for this book" 
+      });
+    }
+
+    // Check if book is available
+    if (book.bookCountAvailable <= 0) {
+      return res.status(400).json({ 
+        message: "This book is currently unavailable. You can still request it and will be added to the waitlist." 
+      });
+    }
+
+    // Create pending transaction
+    const fromDate = new Date().toLocaleDateString("en-US");
+    const toDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US");
+
+    const transaction = await prisma.bookTransaction.create({
+      data: {
+        bookId: book.id,
+        borrowerId: user.memberId || user.email,
+        bookName: book.bookName,
+        borrowerName: user.userFullName,
+        transactionType: "Reserved",
+        transactionStatus: "Pending",
+        fromDate,
+        toDate,
+      },
+    });
+
+    res.status(200).json({
+      message: "Book request submitted successfully! Admin will review your request.",
+      transaction,
+    });
+  } catch (err) {
+    console.error("Request book error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/transactions/approve/:id - Admin approves a book request
+router.post("/approve/:id", async (req, res) => {
+  try {
+    const { isAdmin } = req.body;
+    const { id } = req.params;
+
+    if (!isAdmin) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    // Get transaction
+    const transaction = await prisma.bookTransaction.findUnique({
+      where: { id },
+    });
+
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    if (transaction.transactionStatus !== "Pending") {
+      return res.status(400).json({ message: "Only pending requests can be approved" });
+    }
+
+    // Get book
+    const book = await prisma.book.findUnique({
+      where: { id: transaction.bookId },
+    });
+
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    // Check availability
+    if (book.bookCountAvailable <= 0) {
+      return res.status(400).json({ message: "Book is not available" });
+    }
+
+    // Update transaction status to Reserved (ready for pickup)
+    await prisma.bookTransaction.update({
+      where: { id },
+      data: {
+        transactionStatus: "Reserved",
+      },
+    });
+
+    // Decrement book count
+    await prisma.book.update({
+      where: { id: transaction.bookId },
+      data: {
+        bookCountAvailable: book.bookCountAvailable - 1,
+        transactions: [...book.transactions, transaction.id],
+      },
+    });
+
+    // Add to user's active transactions
+    let user = await prisma.user.findFirst({
+      where: { memberId: transaction.borrowerId },
+    });
+    if (!user) {
+      user = await prisma.user.findFirst({
+        where: { email: transaction.borrowerId },
+      });
+    }
+
+    if (user) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          activeTransactions: [...user.activeTransactions, transaction.id],
+        },
+      });
+    }
+
+    res.status(200).json({
+      message: "Request approved! Book is ready for pickup.",
+      transaction,
+    });
+  } catch (err) {
+    console.error("Approve request error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/transactions/reject/:id - Admin rejects a book request
+router.post("/reject/:id", async (req, res) => {
+  try {
+    const { isAdmin } = req.body;
+    const { id } = req.params;
+
+    if (!isAdmin) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    // Get transaction
+    const transaction = await prisma.bookTransaction.findUnique({
+      where: { id },
+    });
+
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    if (transaction.transactionStatus !== "Pending") {
+      return res.status(400).json({ message: "Only pending requests can be rejected" });
+    }
+
+    // Delete the transaction
+    await prisma.bookTransaction.delete({
+      where: { id },
+    });
+
+    res.status(200).json({
+      message: "Request rejected successfully",
+    });
+  } catch (err) {
+    console.error("Reject request error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/transactions/cancel/:id - Student cancels their own request
+router.post("/cancel/:id", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const { id } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Get transaction
+    const transaction = await prisma.bookTransaction.findUnique({
+      where: { id },
+    });
+
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    // Get user
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify ownership
+    const borrowerId = user.memberId || user.email;
+    if (transaction.borrowerId !== borrowerId) {
+      return res.status(403).json({ message: "You can only cancel your own requests" });
+    }
+
+    if (transaction.transactionStatus !== "Pending") {
+      return res.status(400).json({ 
+        message: "Only pending requests can be cancelled. Contact admin for approved requests." 
+      });
+    }
+
+    // Delete the transaction
+    await prisma.bookTransaction.delete({
+      where: { id },
+    });
+
+    res.status(200).json({
+      message: "Request cancelled successfully",
+    });
+  } catch (err) {
+    console.error("Cancel request error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/transactions/mark-issued/:id - Admin marks reserved book as issued (picked up)
+router.post("/mark-issued/:id", async (req, res) => {
+  try {
+    const { isAdmin } = req.body;
+    const { id } = req.params;
+
+    if (!isAdmin) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    // Get transaction
+    const transaction = await prisma.bookTransaction.findUnique({
+      where: { id },
+    });
+
+    if (!transaction) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    if (transaction.transactionStatus !== "Reserved") {
+      return res.status(400).json({ message: "Only reserved books can be marked as issued" });
+    }
+
+    // Update transaction status to Active (book is now with student)
+    await prisma.bookTransaction.update({
+      where: { id },
+      data: {
+        transactionStatus: "Active",
+        transactionType: "Issued",
+      },
+    });
+
+    res.status(200).json({
+      message: "Book marked as issued successfully",
+    });
+  } catch (err) {
+    console.error("Mark issued error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // POST /api/transactions/return/:id - Process book return
 router.post("/return/:id", async (req, res) => {
   try {
@@ -243,27 +520,17 @@ router.post("/return/:id", async (req, res) => {
     }
 
     // Move transaction from active to previous for user
-    const user = await prisma.user.findFirst({
-      where: { admissionId: transaction.borrowerId },
+    // Try to find by memberId first, then by email
+    let user = await prisma.user.findFirst({
+      where: { memberId: transaction.borrowerId },
     });
     if (!user) {
-      const staffUser = await prisma.user.findFirst({
-        where: { employeeId: transaction.borrowerId },
+      user = await prisma.user.findFirst({
+        where: { email: transaction.borrowerId },
       });
-      if (staffUser) {
-        const updatedActive = staffUser.activeTransactions.filter(
-          (txId) => txId !== id
-        );
-        const updatedPrev = [...staffUser.prevTransactions, id];
-        await prisma.user.update({
-          where: { id: staffUser.id },
-          data: {
-            activeTransactions: updatedActive,
-            prevTransactions: updatedPrev,
-          },
-        });
-      }
-    } else {
+    }
+    
+    if (user) {
       const updatedActive = user.activeTransactions.filter((txId) => txId !== id);
       const updatedPrev = [...user.prevTransactions, id];
       await prisma.user.update({

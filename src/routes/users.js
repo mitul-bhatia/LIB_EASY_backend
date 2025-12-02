@@ -14,10 +14,8 @@ router.get("/getuser/:id", async (req, res) => {
       where: { id },
       select: {
         id: true,
-        userType: true,
         userFullName: true,
-        admissionId: true,
-        employeeId: true,
+        memberId: true,
         age: true,
         dob: true,
         gender: true,
@@ -69,10 +67,8 @@ router.get("/allmembers", async (req, res) => {
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
-        userType: true,
         userFullName: true,
-        admissionId: true,
-        employeeId: true,
+        memberId: true,
         age: true,
         dob: true,
         gender: true,
