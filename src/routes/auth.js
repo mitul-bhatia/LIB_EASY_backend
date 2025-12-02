@@ -175,4 +175,31 @@ router.post("/logout", verifyToken, (req, res) => {
   res.json({ message: "Logged out" });
 });
 
+// GET /api/auth/me - Check current session
+router.get("/me", verifyToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        userFullName: true,
+        memberId: true,
+        email: true,
+        isAdmin: true,
+        points: true,
+        mobileNumber: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ user });
+  } catch (err) {
+    console.error("Get user error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = { router };

@@ -205,4 +205,4 @@ async function seed() {
   }
 }
 
-se
+seed();
