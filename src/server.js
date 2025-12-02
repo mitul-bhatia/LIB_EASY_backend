@@ -7,6 +7,7 @@ const { router: authRouter } = require('./routes/auth.js');
 const { router: usersRouter } = require('./routes/users.js');
 const { router: booksRouter } = require('./routes/books.js');
 const { router: categoriesRouter } = require('./routes/categories.js');
+const { router: transactionsRouter } = require('./routes/transactions.js');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/books", booksRouter);
 app.use("/api/categories", categoriesRouter);
+app.use("/api/transactions", transactionsRouter);
 
 
 
