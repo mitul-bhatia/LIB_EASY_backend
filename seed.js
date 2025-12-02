@@ -90,7 +90,7 @@ async function seed() {
     });
     console.log("✅ Categories created: Fiction, Science, Programming, History, Technology");
 
-    // Create Books
+    // Create Books with reliable cover URLs
     console.log("\nCreating books...");
     const book1 = await prisma.book.create({
       data: {
@@ -100,6 +100,7 @@ async function seed() {
         language: "English",
         publisher: "Prentice Hall",
         isbn: "978-0132350884",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg",
         categories: [programming.id],
       },
     });
@@ -112,6 +113,7 @@ async function seed() {
         language: "English",
         publisher: "Scribner",
         isbn: "978-0743273565",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780743273565-L.jpg",
         categories: [fiction.id],
       },
     });
@@ -124,6 +126,7 @@ async function seed() {
         language: "English",
         publisher: "Bantam Books",
         isbn: "978-0553380163",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780553380163-L.jpg",
         categories: [science.id],
       },
     });
@@ -136,6 +139,7 @@ async function seed() {
         language: "English",
         publisher: "Harper",
         isbn: "978-0062316097",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780062316097-L.jpg",
         categories: [history.id],
       },
     });
@@ -148,32 +152,163 @@ async function seed() {
         language: "English",
         publisher: "O'Reilly Media",
         isbn: "978-0596517748",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780596517748-L.jpg",
         categories: [programming.id, technology.id],
       },
     });
 
-    console.log("✅ Books created: 5 books");
+    const book6 = await prisma.book.create({
+      data: {
+        bookName: "1984",
+        author: "George Orwell",
+        bookCountAvailable: 4,
+        language: "English",
+        publisher: "Signet Classic",
+        isbn: "978-0451524935",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780451524935-L.jpg",
+        categories: [fiction.id],
+      },
+    });
+
+    const book7 = await prisma.book.create({
+      data: {
+        bookName: "To Kill a Mockingbird",
+        author: "Harper Lee",
+        bookCountAvailable: 3,
+        language: "English",
+        publisher: "Harper Perennial",
+        isbn: "978-0061120084",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg",
+        categories: [fiction.id],
+      },
+    });
+
+    const book8 = await prisma.book.create({
+      data: {
+        bookName: "The Pragmatic Programmer",
+        author: "David Thomas, Andrew Hunt",
+        bookCountAvailable: 5,
+        language: "English",
+        publisher: "Addison-Wesley",
+        isbn: "978-0135957059",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780135957059-L.jpg",
+        categories: [programming.id],
+      },
+    });
+
+    const book9 = await prisma.book.create({
+      data: {
+        bookName: "Atomic Habits",
+        author: "James Clear",
+        bookCountAvailable: 7,
+        language: "English",
+        publisher: "Avery",
+        isbn: "978-0735211292",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780735211292-L.jpg",
+        categories: [history.id],
+      },
+    });
+
+    const book10 = await prisma.book.create({
+      data: {
+        bookName: "The Lean Startup",
+        author: "Eric Ries",
+        bookCountAvailable: 4,
+        language: "English",
+        publisher: "Crown Business",
+        isbn: "978-0307887894",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780307887894-L.jpg",
+        categories: [technology.id],
+      },
+    });
+
+    const book11 = await prisma.book.create({
+      data: {
+        bookName: "Educated",
+        author: "Tara Westover",
+        bookCountAvailable: 3,
+        language: "English",
+        publisher: "Random House",
+        isbn: "978-0399590504",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780399590504-L.jpg",
+        categories: [history.id],
+      },
+    });
+
+    const book12 = await prisma.book.create({
+      data: {
+        bookName: "The Selfish Gene",
+        author: "Richard Dawkins",
+        bookCountAvailable: 2,
+        language: "English",
+        publisher: "Oxford University Press",
+        isbn: "978-0198788607",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780198788607-L.jpg",
+        categories: [science.id],
+      },
+    });
+
+    const book13 = await prisma.book.create({
+      data: {
+        bookName: "Design Patterns",
+        author: "Gang of Four",
+        bookCountAvailable: 4,
+        language: "English",
+        publisher: "Addison-Wesley",
+        isbn: "978-0201633610",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780201633610-L.jpg",
+        categories: [programming.id],
+      },
+    });
+
+    const book14 = await prisma.book.create({
+      data: {
+        bookName: "The Hobbit",
+        author: "J.R.R. Tolkien",
+        bookCountAvailable: 5,
+        language: "English",
+        publisher: "Mariner Books",
+        isbn: "978-0547928227",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780547928227-L.jpg",
+        categories: [fiction.id],
+      },
+    });
+
+    const book15 = await prisma.book.create({
+      data: {
+        bookName: "Cosmos",
+        author: "Carl Sagan",
+        bookCountAvailable: 3,
+        language: "English",
+        publisher: "Ballantine Books",
+        isbn: "978-0345539434",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780345539434-L.jpg",
+        categories: [science.id],
+      },
+    });
+
+    console.log("✅ Books created: 15 books with cover URLs");
 
     // Update categories with book references
     await prisma.bookCategory.update({
       where: { id: programming.id },
-      data: { books: [book1.id, book5.id] },
+      data: { books: [book1.id, book5.id, book8.id, book13.id] },
     });
     await prisma.bookCategory.update({
       where: { id: fiction.id },
-      data: { books: [book2.id] },
+      data: { books: [book2.id, book6.id, book7.id, book14.id] },
     });
     await prisma.bookCategory.update({
       where: { id: science.id },
-      data: { books: [book3.id] },
+      data: { books: [book3.id, book12.id, book15.id] },
     });
     await prisma.bookCategory.update({
       where: { id: history.id },
-      data: { books: [book4.id] },
+      data: { books: [book4.id, book9.id, book11.id] },
     });
     await prisma.bookCategory.update({
       where: { id: technology.id },
-      data: { books: [book5.id] },
+      data: { books: [book5.id, book10.id] },
     });
 
     console.log("\n✅ Database seeded successfully!\n");
@@ -193,7 +328,7 @@ async function seed() {
     console.log("   Email: bob@student.com");
     console.log("   Password: password123");
     console.log("\n" + "=".repeat(60));
-    console.log("\n📚 5 Books created");
+    console.log("\n📚 15 Books created (with cover images)");
     console.log("📂 5 Categories created");
     console.log("👥 4 Users created (1 Admin, 3 Students)");
     console.log("\n");
