@@ -65,7 +65,7 @@ router.post("/signup", async (req, res) => {
 
     // Check for existing admissionId or employeeId
     if (admissionId) {
-      const existingAdmission = await prisma.user.findUnique({
+      const existingAdmission = await prisma.user.findFirst({
         where: { admissionId },
       });
       if (existingAdmission) {
@@ -74,7 +74,7 @@ router.post("/signup", async (req, res) => {
     }
 
     if (employeeId) {
-      const existingEmployee = await prisma.user.findUnique({
+      const existingEmployee = await prisma.user.findFirst({
         where: { employeeId },
       });
       if (existingEmployee) {
@@ -161,12 +161,12 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Find user by admissionId or employeeId
+    // Find user by admissionId or employeeId using findFirst
     let user = null;
     if (admissionId) {
-      user = await prisma.user.findUnique({ where: { admissionId } });
+      user = await prisma.user.findFirst({ where: { admissionId } });
     } else if (employeeId) {
-      user = await prisma.user.findUnique({ where: { employeeId } });
+      user = await prisma.user.findFirst({ where: { employeeId } });
     }
 
     if (!user) {

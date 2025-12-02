@@ -16,8 +16,8 @@ model User {
   id                  String   @id @default(auto()) @map("_id") @db.ObjectId
   userType            UserType
   userFullName        String   @unique
-  admissionId         String?  @unique
-  employeeId          String?  @unique
+  admissionId         String?
+  employeeId          String?
   age                 Int?
   gender              String?
   dob                 String?
