@@ -7,17 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserType {
-  Student
-  Staff
-}
-
 model User {
   id                  String   @id @default(auto()) @map("_id") @db.ObjectId
-  userType            UserType
   userFullName        String   @unique
-  admissionId         String?
-  employeeId          String?
+  memberId            String?
   age                 Int?
   gender              String?
   dob                 String?

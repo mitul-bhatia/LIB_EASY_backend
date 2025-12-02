@@ -20,9 +20,8 @@ async function seed() {
     console.log("Creating admin user...");
     const admin = await prisma.user.create({
       data: {
-        userType: "Staff",
         userFullName: "Admin User",
-        employeeId: "ADMIN001",
+        memberId: "ADMIN001",
         email: "admin@library.com",
         password: hashedPassword,
         mobileNumber: "1111111111",
@@ -35,44 +34,42 @@ async function seed() {
     console.log("\nCreating student users...");
     const student1 = await prisma.user.create({
       data: {
-        userType: "Student",
         userFullName: "John Doe",
-        admissionId: "STU001",
+        memberId: "STU001",
         email: "john@student.com",
         password: hashedPassword,
         mobileNumber: "2222222222",
         isAdmin: false,
+        points: 100,
       },
     });
     console.log("✅ Student 1 created:", student1.email);
 
     const student2 = await prisma.user.create({
       data: {
-        userType: "Student",
         userFullName: "Jane Smith",
-        admissionId: "STU002",
+        memberId: "STU002",
         email: "jane@student.com",
         password: hashedPassword,
         mobileNumber: "3333333333",
         isAdmin: false,
+        points: 150,
       },
     });
     console.log("✅ Student 2 created:", student2.email);
 
-    // Create Staff User
-    console.log("\nCreating staff user...");
-    const staff = await prisma.user.create({
+    const student3 = await prisma.user.create({
       data: {
-        userType: "Staff",
-        userFullName: "Bob Wilson",
-        employeeId: "EMP001",
-        email: "bob@staff.com",
+        userFullName: "Bob Johnson",
+        memberId: "STU003",
+        email: "bob@student.com",
         password: hashedPassword,
         mobileNumber: "4444444444",
         isAdmin: false,
+        points: 75,
       },
     });
-    console.log("✅ Staff created:", staff.email);
+    console.log("✅ Student 3 created:", student3.email);
 
     // Create Categories
     console.log("\nCreating categories...");
@@ -88,7 +85,10 @@ async function seed() {
     const history = await prisma.bookCategory.create({
       data: { categoryName: "History" },
     });
-    console.log("✅ Categories created: Fiction, Science, Programming, History");
+    const technology = await prisma.bookCategory.create({
+      data: { categoryName: "Technology" },
+    });
+    console.log("✅ Categories created: Fiction, Science, Programming, History, Technology");
 
     // Create Books
     console.log("\nCreating books...");
@@ -140,12 +140,24 @@ async function seed() {
       },
     });
 
-    console.log("✅ Books created: 4 books");
+    const book5 = await prisma.book.create({
+      data: {
+        bookName: "JavaScript: The Good Parts",
+        author: "Douglas Crockford",
+        bookCountAvailable: 6,
+        language: "English",
+        publisher: "O'Reilly Media",
+        isbn: "978-0596517748",
+        categories: [programming.id, technology.id],
+      },
+    });
+
+    console.log("✅ Books created: 5 books");
 
     // Update categories with book references
     await prisma.bookCategory.update({
       where: { id: programming.id },
-      data: { books: [book1.id] },
+      data: { books: [book1.id, book5.id] },
     });
     await prisma.bookCategory.update({
       where: { id: fiction.id },
@@ -159,30 +171,31 @@ async function seed() {
       where: { id: history.id },
       data: { books: [book4.id] },
     });
+    await prisma.bookCategory.update({
+      where: { id: technology.id },
+      data: { books: [book5.id] },
+    });
 
     console.log("\n✅ Database seeded successfully!\n");
     console.log("=" .repeat(60));
     console.log("LOGIN CREDENTIALS (Password for all: password123)");
     console.log("=" .repeat(60));
     console.log("\n👤 ADMIN:");
-    console.log("   Employee ID: ADMIN001");
     console.log("   Email: admin@library.com");
     console.log("   Password: password123");
     console.log("\n👤 STUDENT 1:");
-    console.log("   Admission ID: STU001");
     console.log("   Email: john@student.com");
     console.log("   Password: password123");
     console.log("\n👤 STUDENT 2:");
-    console.log("   Admission ID: STU002");
     console.log("   Email: jane@student.com");
     console.log("   Password: password123");
-    console.log("\n👤 STAFF:");
-    console.log("   Employee ID: EMP001");
-    console.log("   Email: bob@staff.com");
+    console.log("\n👤 STUDENT 3:");
+    console.log("   Email: bob@student.com");
     console.log("   Password: password123");
     console.log("\n" + "=".repeat(60));
-    console.log("\n📚 4 Books created");
-    console.log("📂 4 Categories created");
+    console.log("\n📚 5 Books created");
+    console.log("📂 5 Categories created");
+    console.log("👥 4 Users created (1 Admin, 3 Students)");
     console.log("\n");
 
     process.exit(0);

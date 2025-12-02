@@ -13,10 +13,8 @@ router.post("/signup", async (req, res) => {
     console.log("Signup request body:", req.body);
 
     const {
-      userType,
       userFullName,
-      admissionId,
-      employeeId,
+      memberId,
       age,
       dob,
       gender,
@@ -28,23 +26,10 @@ router.post("/signup", async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!userType || !userFullName || !email || !password || !mobileNumber) {
+    if (!userFullName || !email || !password || !mobileNumber) {
       return res.status(400).json({
-        message: "Required fields: userType, userFullName, email, password, mobileNumber",
+        message: "Required fields: userFullName, email, password, mobileNumber",
       });
-    }
-
-    // Validate userType
-    if (userType !== "Student" && userType !== "Staff") {
-      return res.status(400).json({ message: "userType must be 'Student' or 'Staff'" });
-    }
-
-    // Validate identifier based on userType
-    if (userType === "Student" && !admissionId) {
-      return res.status(400).json({ message: "admissionId is required for students" });
-    }
-    if (userType === "Staff" && !employeeId) {
-      return res.status(400).json({ message: "employeeId is required for staff" });
     }
 
     // Validate email format
@@ -63,22 +48,13 @@ router.post("/signup", async (req, res) => {
       return res.status(409).json({ message: "Email already in use" });
     }
 
-    // Check for existing admissionId or employeeId
-    if (admissionId) {
-      const existingAdmission = await prisma.user.findFirst({
-        where: { admissionId },
+    // Check for existing memberId if provided
+    if (memberId) {
+      const existingMember = await prisma.user.findFirst({
+        where: { memberId },
       });
-      if (existingAdmission) {
-        return res.status(409).json({ message: "Admission ID already in use" });
-      }
-    }
-
-    if (employeeId) {
-      const existingEmployee = await prisma.user.findFirst({
-        where: { employeeId },
-      });
-      if (existingEmployee) {
-        return res.status(409).json({ message: "Employee ID already in use" });
+      if (existingMember) {
+        return res.status(409).json({ message: "Member ID already in use" });
       }
     }
 
@@ -87,7 +63,6 @@ router.post("/signup", async (req, res) => {
 
     // Create user
     const userData = {
-      userType,
       userFullName,
       mobileNumber: mobileNumber.toString(),
       email,
@@ -96,8 +71,7 @@ router.post("/signup", async (req, res) => {
     };
 
     // Add optional fields only if provided
-    if (admissionId) userData.admissionId = admissionId;
-    if (employeeId) userData.employeeId = employeeId;
+    if (memberId) userData.memberId = memberId;
     if (age) userData.age = parseInt(age);
     if (dob) userData.dob = dob;
     if (gender) userData.gender = gender;
@@ -107,10 +81,8 @@ router.post("/signup", async (req, res) => {
       data: userData,
       select: {
         id: true,
-        userType: true,
         userFullName: true,
-        admissionId: true,
-        employeeId: true,
+        memberId: true,
         age: true,
         dob: true,
         gender: true,
@@ -149,25 +121,14 @@ router.post("/signup", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { admissionId, employeeId, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!password) {
-      return res.status(400).json({ message: "Password is required" });
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
-    if (!admissionId && !employeeId) {
-      return res.status(400).json({
-        message: "Either admissionId or employeeId is required",
-      });
-    }
-
-    // Find user by admissionId or employeeId using findFirst
-    let user = null;
-    if (admissionId) {
-      user = await prisma.user.findFirst({ where: { admissionId } });
-    } else if (employeeId) {
-      user = await prisma.user.findFirst({ where: { employeeId } });
-    }
+    // Find user by email
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -195,10 +156,8 @@ router.post("/login", async (req, res) => {
     // Return user without password
     const safeUser = {
       id: user.id,
-      userType: user.userType,
       userFullName: user.userFullName,
-      admissionId: user.admissionId,
-      employeeId: user.employeeId,
+      memberId: user.memberId,
       email: user.email,
       isAdmin: user.isAdmin,
       points: user.points,
