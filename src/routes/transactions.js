@@ -189,10 +189,10 @@ router.delete("/remove-transaction/:id", async (req, res) => {
 // POST /api/transactions/request-book - Student requests a book
 router.post("/request-book", async (req, res) => {
   try {
-    const { bookId, userId } = req.body;
+    const { bookId, userId, fromDate, toDate } = req.body;
 
-    if (!bookId || !userId) {
-      return res.status(400).json({ message: "Book ID and User ID are required" });
+    if (!bookId || !userId || !fromDate || !toDate) {
+      return res.status(400).json({ message: "Book ID, User ID, From Date, and To Date are required" });
     }
 
     // Get user details
@@ -212,7 +212,7 @@ router.post("/request-book", async (req, res) => {
       where: {
         bookId: bookId,
         borrowerId: user.memberId || user.email,
-        transactionStatus: { in: ["Pending", "Reserved", "Active"] },
+        transactionStatus: { in: ["Pending", "Active"] },
       },
     });
 
@@ -222,24 +222,14 @@ router.post("/request-book", async (req, res) => {
       });
     }
 
-    // Check if book is available
-    if (book.bookCountAvailable <= 0) {
-      return res.status(400).json({ 
-        message: "This book is currently unavailable. You can still request it and will be added to the waitlist." 
-      });
-    }
-
-    // Create pending transaction
-    const fromDate = new Date().toLocaleDateString("en-US");
-    const toDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US");
-
+    // Create pending transaction with user-specified duration
     const transaction = await prisma.bookTransaction.create({
       data: {
         bookId: book.id,
         borrowerId: user.memberId || user.email,
         bookName: book.bookName,
         borrowerName: user.userFullName,
-        transactionType: "Reserved",
+        transactionType: "Issued",
         transactionStatus: "Pending",
         fromDate,
         toDate,
@@ -256,7 +246,7 @@ router.post("/request-book", async (req, res) => {
   }
 });
 
-// POST /api/transactions/approve/:id - Admin approves a book request
+// POST /api/transactions/approve/:id - Admin approves a book request (directly issues)
 router.post("/approve/:id", async (req, res) => {
   try {
     const { isAdmin } = req.body;
@@ -293,15 +283,16 @@ router.post("/approve/:id", async (req, res) => {
       return res.status(400).json({ message: "Book is not available" });
     }
 
-    // Update transaction status to Reserved (ready for pickup)
+    // Update transaction status to Active (directly issued with user-specified duration)
     await prisma.bookTransaction.update({
       where: { id },
       data: {
-        transactionStatus: "Reserved",
+        transactionStatus: "Active",
+        transactionType: "Issued",
       },
     });
 
-    // Decrement book count
+    // Decrement book count and add to book's transactions
     await prisma.book.update({
       where: { id: transaction.bookId },
       data: {
@@ -330,7 +321,7 @@ router.post("/approve/:id", async (req, res) => {
     }
 
     res.status(200).json({
-      message: "Request approved! Book is ready for pickup.",
+      message: "Request approved! Book has been issued to the student.",
       transaction,
     });
   } catch (err) {
