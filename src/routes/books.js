@@ -136,6 +136,7 @@ router.post("/addbook", async (req, res) => {
       bookCountAvailable,
       language,
       publisher,
+      coverURL,
       categories,
     } = req.body;
 
@@ -159,6 +160,7 @@ router.post("/addbook", async (req, res) => {
         bookCountAvailable: parseInt(bookCountAvailable),
         language: language || "",
         publisher: publisher || "",
+        coverURL: coverURL || null,
         categories: categories || [],
       },
     });

@@ -287,28 +287,158 @@ async function seed() {
       },
     });
 
-    console.log("✅ Books created: 15 books with cover URLs");
+    const book16 = await prisma.book.create({
+      data: {
+        bookName: "Thinking, Fast and Slow",
+        author: "Daniel Kahneman",
+        bookCountAvailable: 4,
+        language: "English",
+        publisher: "Farrar, Straus and Giroux",
+        isbn: "978-0374533557",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780374533557-L.jpg",
+        categories: [history.id],
+      },
+    });
+
+    const book17 = await prisma.book.create({
+      data: {
+        bookName: "The Art of Computer Programming",
+        author: "Donald Knuth",
+        bookCountAvailable: 2,
+        language: "English",
+        publisher: "Addison-Wesley",
+        isbn: "978-0201896831",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780201896831-L.jpg",
+        categories: [programming.id],
+      },
+    });
+
+    const book18 = await prisma.book.create({
+      data: {
+        bookName: "Harry Potter and the Sorcerer's Stone",
+        author: "J.K. Rowling",
+        bookCountAvailable: 6,
+        language: "English",
+        publisher: "Scholastic",
+        isbn: "978-0439708180",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780439708180-L.jpg",
+        categories: [fiction.id],
+      },
+    });
+
+    const book19 = await prisma.book.create({
+      data: {
+        bookName: "The Origin of Species",
+        author: "Charles Darwin",
+        bookCountAvailable: 3,
+        language: "English",
+        publisher: "John Murray",
+        isbn: "978-0451529060",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780451529060-L.jpg",
+        categories: [science.id],
+      },
+    });
+
+    const book20 = await prisma.book.create({
+      data: {
+        bookName: "Steve Jobs",
+        author: "Walter Isaacson",
+        bookCountAvailable: 4,
+        language: "English",
+        publisher: "Simon & Schuster",
+        isbn: "978-1451648539",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9781451648539-L.jpg",
+        categories: [history.id, technology.id],
+      },
+    });
+
+    const book21 = await prisma.book.create({
+      data: {
+        bookName: "Introduction to Algorithms",
+        author: "Thomas H. Cormen",
+        bookCountAvailable: 5,
+        language: "English",
+        publisher: "MIT Press",
+        isbn: "978-0262033848",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg",
+        categories: [programming.id],
+      },
+    });
+
+    const book22 = await prisma.book.create({
+      data: {
+        bookName: "The Catcher in the Rye",
+        author: "J.D. Salinger",
+        bookCountAvailable: 3,
+        language: "English",
+        publisher: "Little, Brown and Company",
+        isbn: "978-0316769174",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780316769174-L.jpg",
+        categories: [fiction.id],
+      },
+    });
+
+    const book23 = await prisma.book.create({
+      data: {
+        bookName: "Guns, Germs, and Steel",
+        author: "Jared Diamond",
+        bookCountAvailable: 2,
+        language: "English",
+        publisher: "W. W. Norton & Company",
+        isbn: "978-0393317558",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780393317558-L.jpg",
+        categories: [history.id],
+      },
+    });
+
+    const book24 = await prisma.book.create({
+      data: {
+        bookName: "The Double Helix",
+        author: "James D. Watson",
+        bookCountAvailable: 3,
+        language: "English",
+        publisher: "Atheneum",
+        isbn: "978-0743216302",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780743216302-L.jpg",
+        categories: [science.id],
+      },
+    });
+
+    const book25 = await prisma.book.create({
+      data: {
+        bookName: "Zero to One",
+        author: "Peter Thiel",
+        bookCountAvailable: 5,
+        language: "English",
+        publisher: "Crown Business",
+        isbn: "978-0804139298",
+        coverURL: "https://covers.openlibrary.org/b/isbn/9780804139298-L.jpg",
+        categories: [technology.id],
+      },
+    });
+
+    console.log("✅ Books created: 25 books with cover URLs");
 
     // Update categories with book references
     await prisma.bookCategory.update({
       where: { id: programming.id },
-      data: { books: [book1.id, book5.id, book8.id, book13.id] },
+      data: { books: [book1.id, book5.id, book8.id, book13.id, book17.id, book21.id] },
     });
     await prisma.bookCategory.update({
       where: { id: fiction.id },
-      data: { books: [book2.id, book6.id, book7.id, book14.id] },
+      data: { books: [book2.id, book6.id, book7.id, book14.id, book18.id, book22.id] },
     });
     await prisma.bookCategory.update({
       where: { id: science.id },
-      data: { books: [book3.id, book12.id, book15.id] },
+      data: { books: [book3.id, book12.id, book15.id, book19.id, book24.id] },
     });
     await prisma.bookCategory.update({
       where: { id: history.id },
-      data: { books: [book4.id, book9.id, book11.id] },
+      data: { books: [book4.id, book9.id, book11.id, book16.id, book20.id, book23.id] },
     });
     await prisma.bookCategory.update({
       where: { id: technology.id },
-      data: { books: [book5.id, book10.id] },
+      data: { books: [book5.id, book10.id, book20.id, book25.id] },
     });
 
     console.log("\n✅ Database seeded successfully!\n");
@@ -328,7 +458,7 @@ async function seed() {
     console.log("   Email: bob@student.com");
     console.log("   Password: password123");
     console.log("\n" + "=".repeat(60));
-    console.log("\n📚 15 Books created (with cover images)");
+    console.log("\n📚 25 Books created (with cover images)");
     console.log("📂 5 Categories created");
     console.log("👥 4 Users created (1 Admin, 3 Students)");
     console.log("\n");
